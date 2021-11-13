@@ -11,8 +11,8 @@
  * @copyright Copyright (c) 2021
  *
  * Reference documentation used for implementation:
- * [1] https://www.autosar.org/fileadmin/user_upload/standards/classic/20-11/AUTOSAR_SWS_E2ELibrary.pdf
- * [2] https://www.autosar.org/fileadmin/user_upload/standards/foundation/20-11/AUTOSAR_PRS_E2EProtocol.pdf
+ * - [1] https://www.autosar.org/fileadmin/user_upload/standards/classic/20-11/AUTOSAR_SWS_E2ELibrary.pdf
+ * - [2] https://www.autosar.org/fileadmin/user_upload/standards/foundation/20-11/AUTOSAR_PRS_E2EProtocol.pdf
   */
 
 #include "E2E.h"
@@ -22,7 +22,7 @@
  *
  * Specified in [1] 8.2.13.1 E2E_PCheckStatusType, SWS_E2E_00347
  */
-typedef enum {
+typedef enum E2E_PCheckStatusType {
     /**
      * OK: the checks of the Data in this cycle were
      * successful (including counter check).
@@ -151,25 +151,25 @@ typedef enum {
      * State before E2E_SMCheckInit() is invoked, data cannot
      * be used.
      */
-    E2E_SM_DEINIT = 0x00,
+    E2E_SM_DEINIT = 0x01,
 
     /**
      * No data from the sender is available since the initialization,
      * data cannot be used.
      */
-    E2E_SM_NODATA = 0x00,
+    E2E_SM_NODATA = 0x02,
 
     /**
      * There has been some data received since startup, but it is
      * not yet possible use it, data cannot be used
      */
-    E2E_SM_INIT = 0x00,
+    E2E_SM_INIT = 0x03,
 
     /**
      * Communication not functioning properly, data cannot be
      * used.
      */
-    E2E_SM_INVALID = 0x00,
+    E2E_SM_INVALID = 0x04,
 } E2E_SMStateType;
 
 
@@ -220,6 +220,19 @@ typedef struct {
  * Checks the communication channel. It determines if the data can be used for
  * safety-related application, based on history of checks performed by a corresponding
  * E2E_P0XCheck() function.
+ *
+ * Specified in:
+ * - [1] 8.3.13.1 E2E_SMCheck, SWS_E2E_00340
+ * - [2] 6.15.2 State machine specification, PRS_E2E_00354 and PRS_E2E_00345 and
+ *   Figure 6.244: E2E state machine check
+ *
+ * @note transitToInvalidExtended is a boolean meta-configuration parameter in AUTOSAR
+ * which will control certain aspects of the state machine.
+ * This implementation will assume transitToInvalidExtended = TRUE as this seems
+ * to indicate the behavior in Autosar R20.
+ * See [2] 6.15.1 Overview of the state machine, PRS_E2E_00675 and PRS_E2E_00676
+ *
+ *
  *
  * @param ProfileStatus Profile-independent status of the reception on one single Data in one cycle
  * @param ConfigPtr     Pointer to static configuration
