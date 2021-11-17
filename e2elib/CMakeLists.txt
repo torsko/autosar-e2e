@@ -6,5 +6,6 @@ set(SRCS
 
 add_library(e2elib ${SRCS})
 target_include_directories(e2elib PUBLIC include)
+target_link_libraries(e2elib common crclib)
 
 add_subdirectory(test)
