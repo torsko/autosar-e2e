@@ -1,9 +1,18 @@
+set(TARGET_NAME crclib)
+
 set(SRCS
     src/Crc8.c
+    src/Crc8H2F.c
+    src/Crc16.c
+    src/Crc16ARC.c
+    src/Crc32.c
+    src/Crc32P4.c
+    src/Crc64.c
 )
 
-add_library(crclib ${SRCS})
-target_include_directories(crclib PUBLIC include)
-target_link_libraries(crclib common)
+add_library(${TARGET_NAME} ${SRCS})
+target_include_directories(${TARGET_NAME} PUBLIC include)
+target_link_libraries(${TARGET_NAME} common)
+target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
 
 add_subdirectory(test)

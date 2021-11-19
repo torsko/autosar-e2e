@@ -1,5 +1,5 @@
 /**
- * @file Crc8.c
+ * @file Crc8H2F.c
  * @author Tomas Wester (torsko@gmail.com)
  * @brief
  * @version 0.1
@@ -19,12 +19,12 @@
  */
 #include "Crc.h"
 
-uint8_t Crc_CalculateCRC8(const uint8_t* Crc_DataPtr,
-                          uint32_t Crc_Length,
-                          uint8_t Crc_StartValue8,
-                          bool Crc_IsFirstCall) {
+uint8_t Crc_CalculateCRC8H2F(const uint8_t* Crc_DataPtr,
+                             uint32_t Crc_Length,
+                             uint8_t Crc_StartValue8H2F,
+                             bool Crc_IsFirstCall) {
     const uint8_t topbit = 0x80;
-    const uint8_t polynomial = 0x1D;
+    const uint8_t polynomial = 0x2F;
     uint8_t remainder = 0;
 
     if (Crc_IsFirstCall) {
@@ -32,7 +32,7 @@ uint8_t Crc_CalculateCRC8(const uint8_t* Crc_DataPtr,
         remainder = 0xFF;
     } else {
         // SWS_Crc_00041
-        remainder = (Crc_StartValue8 ^ 0xFF);
+        remainder = (Crc_StartValue8H2F ^ 0xFF);
     }
 
     /*

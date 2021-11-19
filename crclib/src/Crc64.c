@@ -1,12 +1,12 @@
 /**
- * @file Crc8.c
+ * @file Crc64.c
  * @author Tomas Wester (torsko@gmail.com)
  * @brief
  * @version 0.1
  * @date 2021-11-16
  *
  * -----------------------------------------------------------------------
- * The Crc_CalculateCRC8 function is an adaptation of the crcSlow function
+ * The Crc_CalculateCRC64 function is an adaptation of the crcSlow function
  * from Barr Group's "Free CRC Code in C"
  * https://barrgroup.com/downloads/code-crc-c
  *
@@ -17,22 +17,52 @@
  * -----------------------------------------------------------------------
  *
  */
+
 #include "Crc.h"
 
-uint8_t Crc_CalculateCRC8(const uint8_t* Crc_DataPtr,
+static uint64_t reflect(uint64_t data, uint8_t nBits) {
+    uint64_t  reflection = 0x0000000000000000;
+	uint8_t  bit;
+
+	/*
+	 * Reflect the data about the center bit.
+	 */
+	for (bit = 0; bit < nBits; ++bit)
+	{
+		/*
+		 * If the LSB bit is set, set the reflection of it.
+		 */
+		if (data & 0x01)
+		{
+            /**
+             * Note the '1ULL' integer literal
+             * The type of the result of a bit-shift operation is the same
+             * as the type of the left-hand operator.
+             */
+			reflection |= (1ULL << ((nBits - 1) - bit));
+		}
+
+		data = (data >> 1);
+	}
+
+	return (reflection);
+}
+
+uint64_t Crc_CalculateCRC64(const uint8_t* Crc_DataPtr,
                           uint32_t Crc_Length,
-                          uint8_t Crc_StartValue8,
+                          uint64_t Crc_StartValue64,
                           bool Crc_IsFirstCall) {
-    const uint8_t topbit = 0x80;
-    const uint8_t polynomial = 0x1D;
-    uint8_t remainder = 0;
+    const uint64_t topbit = 0x8000000000000000;
+    const uint64_t polynomial = 0x42F0E1EBA9EA3693;
+    uint64_t remainder = 0;
 
     if (Crc_IsFirstCall) {
         // SWS_Crc_00014
-        remainder = 0xFF;
+        remainder = 0xFFFFFFFFFFFFFFFF;
     } else {
         // SWS_Crc_00041
-        remainder = (Crc_StartValue8 ^ 0xFF);
+        remainder = (Crc_StartValue64 ^ 0xFFFFFFFFFFFFFFFF);
+        remainder = reflect(remainder, 64);
     }
 
     /*
@@ -43,7 +73,7 @@ uint8_t Crc_CalculateCRC8(const uint8_t* Crc_DataPtr,
         /*
          * Bring the next byte into the remainder.
          */
-        remainder ^= Crc_DataPtr[byte];
+        remainder ^= reflect(Crc_DataPtr[byte], 8) << 56;
 
         /*
          * Perform modulo-2 division, a bit at a time.
@@ -67,5 +97,5 @@ uint8_t Crc_CalculateCRC8(const uint8_t* Crc_DataPtr,
     /*
      * The final remainder is the CRC result.
      */
-    return remainder ^ 0xFF;
+    return reflect(remainder, 64) ^ 0xFFFFFFFFFFFFFFFF;
 }

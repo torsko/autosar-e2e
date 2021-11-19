@@ -1,12 +1,12 @@
 /**
- * @file Crc8.c
+ * @file Crc16.c
  * @author Tomas Wester (torsko@gmail.com)
  * @brief
  * @version 0.1
  * @date 2021-11-16
  *
  * -----------------------------------------------------------------------
- * The Crc_CalculateCRC8 function is an adaptation of the crcSlow function
+ * The Crc_CalculateCRC16 function is an adaptation of the crcSlow function
  * from Barr Group's "Free CRC Code in C"
  * https://barrgroup.com/downloads/code-crc-c
  *
@@ -17,22 +17,23 @@
  * -----------------------------------------------------------------------
  *
  */
+
 #include "Crc.h"
 
-uint8_t Crc_CalculateCRC8(const uint8_t* Crc_DataPtr,
+uint16_t Crc_CalculateCRC16(const uint8_t* Crc_DataPtr,
                           uint32_t Crc_Length,
-                          uint8_t Crc_StartValue8,
+                          uint16_t Crc_StartValue16,
                           bool Crc_IsFirstCall) {
-    const uint8_t topbit = 0x80;
-    const uint8_t polynomial = 0x1D;
-    uint8_t remainder = 0;
+    const uint16_t topbit = 0x8000;
+    const uint16_t polynomial = 0x1021;
+    uint16_t remainder = 0;
 
     if (Crc_IsFirstCall) {
         // SWS_Crc_00014
-        remainder = 0xFF;
+        remainder = 0xFFFF;
     } else {
         // SWS_Crc_00041
-        remainder = (Crc_StartValue8 ^ 0xFF);
+        remainder = (Crc_StartValue16 ^ 0x0000);
     }
 
     /*
@@ -43,7 +44,7 @@ uint8_t Crc_CalculateCRC8(const uint8_t* Crc_DataPtr,
         /*
          * Bring the next byte into the remainder.
          */
-        remainder ^= Crc_DataPtr[byte];
+        remainder ^= Crc_DataPtr[byte] << 8;
 
         /*
          * Perform modulo-2 division, a bit at a time.
@@ -67,5 +68,5 @@ uint8_t Crc_CalculateCRC8(const uint8_t* Crc_DataPtr,
     /*
      * The final remainder is the CRC result.
      */
-    return remainder ^ 0xFF;
+    return remainder ^ 0x0000;
 }
