@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(autosar)
 
+# Enable cppcheck if
 find_program(CMAKE_C_CPPCHECK NAMES cppcheck)
 if (CMAKE_C_CPPCHECK)
     list(
@@ -13,21 +14,42 @@ if (CMAKE_C_CPPCHECK)
             "--std=c99"
     )
 
-    #get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-    foreach(dir ${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES})
-      message(STATUS "dir='${dir}'")
-    endforeach()
-
     add_custom_target(cppcheck
-        COMMAND ${CMAKE_C_CPPCHECK} --enable=all -i test ${PROJECT_SOURCE_DIR}/e2elib ${PROJECT_SOURCE_DIR}/crclib ${PROJECT_SOURCE_DIR}/common
-                                    -I ${PROJECT_SOURCE_DIR}/e2elib/include
-                                    -I ${PROJECT_SOURCE_DIR}/crclib/include
-                                    -I ${PROJECT_SOURCE_DIR}/common/include
+        COMMAND ${CMAKE_C_CPPCHECK} --enable=all -i test
+            ${PROJECT_SOURCE_DIR}/e2e
+            ${PROJECT_SOURCE_DIR}/crc
+            ${PROJECT_SOURCE_DIR}/common
+            -I ${PROJECT_SOURCE_DIR}/e2e/include
+            -I ${PROJECT_SOURCE_DIR}/crc/include
+            -I ${PROJECT_SOURCE_DIR}/common/include
         COMMENT "Running cppcheck with all warnings!"
         )
 
 endif()
 
+# Enable generating doxygen documentation with the 'docs' target
+find_program(DOXYGEN_BIN doxygen)
+if (DOXYGEN_BIN)
+  message(STATUS "Doxygen found, adding custom target 'docs'")
+  add_custom_target(docs
+      COMMAND doxygen Doxyfile
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+endif()
+
+# Enable generating a coverage report if gcovr is installed
+find_program(GCOVR_BIN gcovr)
+if (GCOVR_BIN)
+  add_custom_target(coverage
+    COMMAND make && ctest
+    COMMAND gcovr -r ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR}
+  )
+  add_custom_target(coverage_html
+    COMMAND make && ctest
+    COMMAND mkdir -p coverage
+    COMMAND gcovr -r ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR} --html --html-details -o coverage/coverage.html
+  )
+
+endif()
 
 # Enable testing for the project
 enable_testing()
@@ -44,6 +66,8 @@ FetchContent_MakeAvailable(googletest)
 
 include(GoogleTest)
 
+add_compile_options(-ggdb -O0)
+
 add_subdirectory(common)
-add_subdirectory(crclib)
-add_subdirectory(e2elib)
+add_subdirectory(crc)
+add_subdirectory(e2e)

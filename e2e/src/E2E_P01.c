@@ -1,3 +1,19 @@
+/**
+ * @file E2E_P01.c
+ * @author Tomas Wester (torsko@gmail.com)
+ * @brief
+ * @version 0.1
+ * @date 2021-11-21
+ *
+ * @copyright Copyright (c) 2021
+ *
+ * @note static functions that are prefixed with "E2E_P01" are named after a corresponding
+ *       state machine in the AUTOSAR reference documentation
+ *
+ * references:
+ * - https://www.autosar.org/fileadmin/user_upload/standards/foundation/20-11/AUTOSAR_PRS_E2EProtocol.pdf
+ *
+ */
 #include "E2E_P01.h"
 
 #include "Crc.h"
@@ -9,7 +25,46 @@ static inline uint8_t uint8_min(uint8_t a, uint8_t b) {
     return b;
 }
 
-static uint8_t E2E_P01_ReadCounter(const E2E_P01ConfigType* Config,
+static bool configValid(const E2E_P01ConfigType* Config) {
+    bool result = true;
+
+    if (((Config->CounterOffset % 4) != 0) ||
+        ((Config->CRCOffset % 8) != 0)) {
+        result = false;
+    }
+
+    switch (Config->DataIDMode) {
+        case E2E_P01_DATAID_BOTH:
+        case E2E_P01_DATAID_LOW:
+        case E2E_P01_DATAID_ALT:
+            if (Config->DataIDNibbleOffset != 0) {
+                result = false;
+            }
+        break;
+        case E2E_P01_DATAID_NIBBLE:
+            if ((Config->DataIDNibbleOffset % 4) != 0) {
+                result = false;
+            }
+            break;
+        default:
+            result = false;
+            break;
+    }
+
+    // Check DataLength, it must be a multiple of 8
+    // and big enough to hold at least the CRC byte + the
+    // counter nibble, (i.e. 2 bytes)
+    if (((Config->DataLength % 8) != 0) ||
+        (Config->DataLength < 12U)) {
+        result = false;
+    }
+
+
+
+    return result;
+}
+
+static uint8_t readCounter(const E2E_P01ConfigType* Config,
                                    const uint8_t* Data) {
     uint8_t counter = 0;
 
@@ -24,6 +79,37 @@ static uint8_t E2E_P01_ReadCounter(const E2E_P01ConfigType* Config,
     }
 
     return counter;
+}
+
+static void writeCounter(const E2E_P01ConfigType* Config, E2E_P01ProtectStateType* State, uint8_t* Data) {
+    const size_t counterByteIndex = Config->CounterOffset / 8U;
+    if ((Config->CounterOffset % 8) == 0) {
+        const uint8_t oldDataToKeep = Data[counterByteIndex] & 0xF0;
+        Data[counterByteIndex] = oldDataToKeep | (State->Counter & 0x0F);
+    } else {
+        const uint8_t oldDataToKeep = Data[counterByteIndex] & 0x0F;
+        Data[counterByteIndex] = oldDataToKeep | ((State->Counter << 4) & 0xF0);
+    }
+}
+
+static void writeDataIdNibble(const E2E_P01ConfigType* Config, uint8_t* Data) {
+    if (Config->DataIDMode == E2E_P01_DATAID_NIBBLE) {
+            const size_t dataIdNibbleByteIndex = Config->DataIDNibbleOffset / 8U;
+            if ((Config->DataIDNibbleOffset % 8) == 0) {
+                const uint8_t oldDataToKeep = Data[dataIdNibbleByteIndex] & 0xF0;
+                Data[dataIdNibbleByteIndex] = oldDataToKeep | ((Config->DataID >> 8) & 0x0F);
+            } else {
+                const uint8_t oldDataToKeep = Data[dataIdNibbleByteIndex] & 0x0F;
+                Data[dataIdNibbleByteIndex] = oldDataToKeep | ((Config->DataID >> 4) & 0xF0);
+            }
+        }
+}
+
+static void incrementCounter(E2E_P01ProtectStateType* State) {
+    State->Counter++;
+    if (State->Counter >= 15) {
+        State->Counter = 0;
+    }
 }
 
 static uint8_t E2E_P01_getDataIdCRC(const E2E_P01ConfigType* Config,
@@ -41,7 +127,7 @@ static uint8_t E2E_P01_getDataIdCRC(const E2E_P01ConfigType* Config,
             CRC = Crc_CalculateCRC8(&DataIDLSB, 1, 0xFF, false);
             break;
         case E2E_P01_DATAID_ALT: {
-            uint8_t counter = E2E_P01_ReadCounter(Config, Data);
+            uint8_t counter = readCounter(Config, Data);
             if ((counter % 2) == 0) {
                 CRC = Crc_CalculateCRC8(&DataIDLSB, 1, 0xFF, false);
             } else {
@@ -49,10 +135,12 @@ static uint8_t E2E_P01_getDataIdCRC(const E2E_P01ConfigType* Config,
             }
             break;
         }
-        case E2E_P01_DATAID_NIBBLE:
+        case E2E_P01_DATAID_NIBBLE: {
+            const uint8_t zero = 0;
             CRC = Crc_CalculateCRC8(&DataIDLSB, 1, 0xFF, false);
-            CRC = Crc_CalculateCRC8(0, 1, CRC, false);
+            CRC = Crc_CalculateCRC8(&zero, 1, CRC, false);
             break;
+        }
     }
 
     return CRC;
@@ -61,17 +149,22 @@ static uint8_t E2E_P01_getDataIdCRC(const E2E_P01ConfigType* Config,
 static uint8_t E2E_P01_CalculateCRCOverDataIdAndData(const E2E_P01ConfigType* Config,
                                                      const uint8_t* Data) {
 
+    const size_t crcByteIndex = Config->CRCOffset / 8U;
+    const size_t dataLength = Config->DataLength / 8U;
+
     uint8_t CRC = E2E_P01_getDataIdCRC(Config, Data);
 
     // Compute CRC over the area before the CRC (if CRC is not the first byte)
-    if (Config->CRCOffset >= 8) {
-        CRC = Crc_CalculateCRC8(Data, (Config->CRCOffset/8), CRC, false);
+    if (crcByteIndex >= 1) {
+        CRC = Crc_CalculateCRC8(Data, crcByteIndex, CRC, false);
     }
 
     // Compute the area after CRC, if CRC is not the last byte.
     // Start with the byte after CRC, finish with the last byte of data
-    if (((Config->CRCOffset) / 8) < ((Config->DataLength / 8) - 1)) {
-        CRC = Crc_CalculateCRC8(&Data[((Config->CRCOffset / 8) + 1)], ((Config->DataLength / 8) - (Config->CRCOffset / 8 - 1)), CRC, false);
+    if (crcByteIndex < (dataLength - 1U)) {
+        const size_t firstByteAfterCrc = crcByteIndex + 1;
+        //const size_t remainingDataLength = dataLength - 2 - 1;
+        CRC = Crc_CalculateCRC8(&Data[firstByteAfterCrc], (dataLength - crcByteIndex - 1), CRC, false);
     }
 
     CRC = CRC ^ 0xFF;
@@ -99,12 +192,6 @@ static bool E2E_P01_CRCAndDataIDNibble(const E2E_P01ConfigType* Config,
     uint8_t CalculatedCRC = E2E_P01_CalculateCRCOverDataIdAndData(Config, Data);
 
     return (ReceivedCRC == CalculatedCRC) && (ReceivedDataIDNibble == DataIDNibble);
-}
-
-static void E2E_P01_process_NoNewOrRepeatedDataCounter(E2E_P01CheckStateType* State) {
-    if (State->NoNewOrRepeatedDataCounter < 14) {
-        State->NoNewOrRepeatedDataCounter++;
-    }
 }
 
 static E2E_P01CheckStatusType E2E_P01_process_counter(const E2E_P01ConfigType* Config,
@@ -164,8 +251,28 @@ static E2E_P01CheckStatusType E2E_P01_process_counter(const E2E_P01ConfigType* C
 
 Std_ReturnType E2E_P01Protect(const E2E_P01ConfigType* Config,
                               E2E_P01ProtectStateType* State,
-                              uint8_t* DataPtr) {
+                              uint8_t* Data) {
+    Std_ReturnType result = E2E_E_OK;
 
+    if (Config == NULL || State == NULL || Data == NULL) {
+        result = E2E_E_INPUTERR_NULL;
+    } else if (configValid(Config) == false) {
+        result = E2E_E_INPUTERR_WRONG;
+    } else {
+        writeCounter(Config, State, Data);
+
+        writeDataIdNibble(Config, Data);
+
+        const uint8_t crc = E2E_P01_CalculateCRCOverDataIdAndData(Config, Data);
+
+        const size_t crcByteIndex = Config->CRCOffset / 8U;
+        Data[crcByteIndex] = crc;
+
+        incrementCounter(State);
+    }
+
+
+    return result;
 }
 
 Std_ReturnType E2E_P01ProtectInit(E2E_P01ProtectStateType* State) {
@@ -179,12 +286,12 @@ Std_ReturnType E2E_P01ProtectInit(E2E_P01ProtectStateType* State) {
     return result;
 }
 
-Std_ReturnType E2E_P01Forward(const E2E_P01ConfigType* Config,
-                              E2E_PCheckStatusType Checkstatus,
-                              E2E_P01ProtectStateType* State,
-                              uint8_t* DataPtr) {
+// Std_ReturnType E2E_P01Forward(const E2E_P01ConfigType* Config,
+//                               E2E_PCheckStatusType Checkstatus,
+//                               E2E_P01ProtectStateType* State,
+//                               uint8_t* DataPtr) {
 
-}
+// }
 
 /**
  * PRS_E2E_00196
@@ -212,7 +319,7 @@ Std_ReturnType E2E_P01Check(const E2E_P01ConfigType* Config,
     State->MaxDeltaCounter = uint8_min(State->MaxDeltaCounter++, 14);
 
     if (State->NewDataAvailable) {
-        uint8_t ReceivedCounter = E2E_P01_ReadCounter(Config, Data);
+        uint8_t ReceivedCounter = readCounter(Config, Data);
         if (ReceivedCounter < 15) {
             bool dataValid = E2E_P01_CRCAndDataIDNibble(Config, Data);
 
@@ -239,8 +346,7 @@ Std_ReturnType E2E_P01Check(const E2E_P01ConfigType* Config,
         State->Status = E2E_P01STATUS_NONEWDATA;
     }
 
-
-
+    return result;
 }
 
 Std_ReturnType E2E_P01CheckInit(E2E_P01CheckStateType* State) {

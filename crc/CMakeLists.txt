@@ -1,4 +1,4 @@
-set(TARGET_NAME crclib)
+set(TARGET_NAME crc)
 
 set(SRCS
     src/Crc8.c
@@ -13,6 +13,7 @@ set(SRCS
 add_library(${TARGET_NAME} ${SRCS})
 target_include_directories(${TARGET_NAME} PUBLIC include)
 target_link_libraries(${TARGET_NAME} common)
-target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
+target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -pedantic -Werror --coverage)
+target_link_options(${TARGET_NAME} PUBLIC --coverage)
 
 add_subdirectory(test)

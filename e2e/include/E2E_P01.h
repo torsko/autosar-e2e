@@ -309,18 +309,18 @@ typedef struct {
  *
  * Specified in [1] 8.3.1.1 E2E_P01Protect, SWS_E2E_00166
  *
- * @param ConfigPtr Pointer to static configuration.
- * @param StatePtr  Pointer to port/data communication state.
- * @param DataPtr   Pointer to Data to be transmitted.
+ * @param Config    Pointer to static configuration.
+ * @param State     Pointer to port/data communication state.
+ * @param Data      Pointer to Data to be transmitted.
  * @return Std_ReturnType
  * @retval E2E_E_INPUTERR_NULL
  * @retval E2E_E_INPUTERR_WRONG
  * @retval E2E_E_INTERR
  * @retval E2E_E_OK
  */
-Std_ReturnType E2E_P01Protect(const E2E_P01ConfigType* ConfigPtr,
-                              E2E_P01ProtectStateType* StatePtr,
-                              uint8_t* DataPtr);
+Std_ReturnType E2E_P01Protect(const E2E_P01ConfigType* Config,
+                              E2E_P01ProtectStateType* State,
+                              uint8_t* Data);
 
 
 /**
@@ -333,7 +333,7 @@ Std_ReturnType E2E_P01Protect(const E2E_P01ConfigType* ConfigPtr,
  * @retval E2E_E_INPUTERR_NULL  Null pointer passed
  * @retval E2E_E_OK
  */
-Std_ReturnType E2E_P01ProtectInit(E2E_P01ProtectStateType* StatePtr);
+Std_ReturnType E2E_P01ProtectInit(E2E_P01ProtectStateType* State);
 
 
 /**
@@ -387,7 +387,7 @@ Std_ReturnType E2E_P01Check(const E2E_P01ConfigType* Config,
  * @retval E2E_E_INPUTERR_NULL - null pointer passed
  * @retval E2E_E_OK
  */
-Std_ReturnType E2E_P01CheckInit(E2E_P01CheckStateType* StatePtr);
+Std_ReturnType E2E_P01CheckInit(E2E_P01CheckStateType* State);
 
 
 /**

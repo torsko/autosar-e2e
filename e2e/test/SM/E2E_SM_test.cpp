@@ -114,8 +114,6 @@ TEST_F(SMCheck, NullStateParameterReturnsError) {
  *
  * Each test name lists the current state, method call, and expected state or return value.
  * The names exclude E2E_SM and E2E_E prefixes.
- *
- *
  */
 
 /**
@@ -162,13 +160,72 @@ TEST_F(SMCheck, NODATACheckWithERRORRemainsInNODATA) {
  * When in NODATA, calling Check with ProfileStatus E2E_P_OK
  * should transition to INIT
  */
-TEST_F(SMCheck, NODATACheckWithOKRemainsInNODATA) {
+TEST_F(SMCheck, NODATACheckWithOKTransitionToINIT) {
     E2E_SMCheckInit(&state_, &config_);
 
+    // Run the state machine
     Std_ReturnType result = E2E_SMCheck(E2E_P_OK, &config_, &state_);
 
+    // Check that we have successfully transitioned to INIT
     EXPECT_EQ(result, E2E_E_OK);
     EXPECT_EQ(state_.SMState, E2E_SM_INIT);
+}
+
+/**
+ * When in NODATA, calling Check with ProfileStatus E2E_P_WRONGSEQUENCE
+ * should transition to INIT
+ */
+TEST_F(SMCheck, NODATACheckWithWRONGSEQUENCETransitionToINIT) {
+    E2E_SMCheckInit(&state_, &config_);
+
+    // Run the state machine
+    Std_ReturnType result = E2E_SMCheck(E2E_P_WRONGSEQUENCE, &config_, &state_);
+
+    // Check that we have successfully transitioned to INIT
+    EXPECT_EQ(result, E2E_E_OK);
+    EXPECT_EQ(state_.SMState, E2E_SM_INIT);
+}
+
+/**
+ * When in NODATA, calling Check with ProfileStatus E2E_P_REPEATED
+ * should transition to INIT
+ */
+TEST_F(SMCheck, NODATACheckWithREPEATEDTransitionToINIT) {
+    E2E_SMCheckInit(&state_, &config_);
+
+    // Run the state machine
+    Std_ReturnType result = E2E_SMCheck(E2E_P_REPEATED, &config_, &state_);
+
+    // Check that we have successfully transitioned to INIT
+    EXPECT_EQ(result, E2E_E_OK);
+    EXPECT_EQ(state_.SMState, E2E_SM_INIT);
+}
+
+TEST_F(SMCheck, NODATATransitionToInitClearsStatusWindow) {
+     E2E_SMCheckInit(&state_, &config_);
+
+    // First let's fill the window statuses
+    // Make note that we're leaving the two last window slots alone
+    // This is due to the state machine checking if the WindowTopIndex has
+    // overrun to 0 again before checking the status of the received message.
+    // Thus the state of the last slot in the window becomes irrelevant.
+    for (uint8_t i=0; i<(kWindowSizeInit - 2U); ++i) {
+        Std_ReturnType result = E2E_SMCheck(E2E_P_NONEWDATA, &config_, &state_);
+        EXPECT_EQ(result, E2E_E_OK);
+        EXPECT_EQ(state_.SMState, E2E_SM_NODATA);
+    }
+
+    // Run the state machine
+    Std_ReturnType result = E2E_SMCheck(E2E_P_OK, &config_, &state_);
+
+    // Check that we have successfully transitioned to INIT
+    EXPECT_EQ(result, E2E_E_OK);
+    EXPECT_EQ(state_.SMState, E2E_SM_INIT);
+
+    // Check that we have cleared the entire window (by using WindowSizeValid instead)
+    for (uint8_t i=0; i<(kWindowSizeValid); ++i) {
+        EXPECT_EQ(state_.ProfileStatusWindow[i], E2E_P_NOTAVAILABLE);
+    }
 }
 
 /**
@@ -216,3 +273,29 @@ TEST_F(SMCheck, NODATAConsecutiveCheckWithERRORTransitionToINVALID) {
     EXPECT_EQ(result, E2E_E_OK);
     EXPECT_EQ(state_.SMState, E2E_SM_INVALID);
 }
+
+
+/**
+ * When in NODATA, transitioning to INVALID with
+ *      Config->ClearToInvalid == TRUE
+ * should clear the status window
+ */
+TEST_F(SMCheck, NODATATransitionToINVALIDWithClearToInvalidTRUEClearsStatusWindow) {
+    E2E_SMCheckInit(&state_, &config_);
+    config_.ClearToInvalid = true;
+
+    // The NODATA state uses the init window size
+    for (uint8_t i=0; i<(kWindowSizeInit); ++i) {
+        E2E_SMCheck(E2E_P_ERROR, &config_, &state_);
+    }
+    EXPECT_EQ(state_.SMState, E2E_SM_INVALID);
+
+    // Check that we have cleared the entire window (by using WindowSizeValid instead)
+    for (uint8_t i=0; i<(kWindowSizeInit); ++i) {
+        EXPECT_EQ(state_.ProfileStatusWindow[i], E2E_P_NOTAVAILABLE);
+    }
+}
+
+// Test clear to invalid flag in transition to INVALID
+// In one case the call is E2E_SMClearRemainingStatus(State,Config,E2E_SM_INVALID)
+// in the other its E2E_SM_ClearStatus(State,Config)

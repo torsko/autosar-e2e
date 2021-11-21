@@ -116,13 +116,11 @@ static void E2E_SMClearStatus(E2E_SMCheckStateType* StatePtr,
  * @param ConfigPtr
  * @param NextState
  */
-static void E2E_SMClearRemainingStatus(E2E_SMCheckStateType* StatePtr,
-                                       const E2E_SMConfigType* ConfigPtr,
-                                       E2E_SMStateType NextState) {
-
-    uint8_t CurrentWindowSize = E2E_SMGetWindowSize(StatePtr->SMState, ConfigPtr);
-    uint8_t NextWindowSize = E2E_SMGetWindowSize(StatePtr->SMState, ConfigPtr);
-
+// static void E2E_SMClearRemainingStatus(E2E_SMCheckStateType* StatePtr,
+//                                        const E2E_SMConfigType* ConfigPtr,
+//                                        E2E_SMStateType NextState) {
+//     uint8_t CurrentWindowSize = E2E_SMGetWindowSize(StatePtr->SMState, ConfigPtr);
+//     uint8_t NextWindowSize = E2E_SMGetWindowSize(StatePtr->SMState, ConfigPtr);
 
     // TBD
     // The state diagram is unclear, I think the intent is as below
@@ -135,13 +133,11 @@ static void E2E_SMClearRemainingStatus(E2E_SMCheckStateType* StatePtr,
     // of just keeping the "CurrentWindowSize" first elements of the array.
 
 
-    //if (CurrentWindowSize < NextWindowSize) {
-        // set all elements in ProfileStatusWindow to E2E_P_NOTAVAILABLE
-        // except the latest n elements
-    //}
-
-
-}
+    // if (CurrentWindowSize < NextWindowSize) {
+    //     set all elements in ProfileStatusWindow to E2E_P_NOTAVAILABLE
+    //     except the latest n elements
+    // }
+// }
 
 static void E2E_SMCheck_NODATA(E2E_PCheckStatusType ProfileStatus,
                                const E2E_SMConfigType* ConfigPtr,
@@ -154,7 +150,7 @@ static void E2E_SMCheck_NODATA(E2E_PCheckStatusType ProfileStatus,
         if (ConfigPtr->ClearToInvalid) {
             E2E_SMClearStatus(StatePtr, ConfigPtr);
         } else {
-            E2E_SMClearRemainingStatus(StatePtr, ConfigPtr, E2E_SM_INVALID);
+            // E2E_SMClearRemainingStatus(StatePtr, ConfigPtr, E2E_SM_INVALID);
         }
         // Transition to INVALID
         StatePtr->SMState = E2E_SM_INVALID;
@@ -206,6 +202,8 @@ Std_ReturnType E2E_SMCheck(E2E_PCheckStatusType ProfileStatus,
         switch (StatePtr->SMState) {
             case E2E_SM_NODATA:
                 E2E_SMCheck_NODATA(ProfileStatus, ConfigPtr, StatePtr);
+            break;
+            default: // remove this later
             break;
         }
     }
