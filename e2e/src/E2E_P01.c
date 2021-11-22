@@ -142,10 +142,12 @@ static uint8_t E2E_P01_getDataIdCRC(const E2E_P01ConfigType* Config,
             break;
         }
 
+        // GCOV_EXCL_START
         default:
             // This case is technically unreachable as the configuration
             // is verified before it is used here.
             break;
+        // GCOV_EXCL_STOP
     }
 
     return CRC;
@@ -296,13 +298,6 @@ Std_ReturnType E2E_P01ProtectInit(E2E_P01ProtectStateType* State) {
 
     return result;
 }
-
-// Std_ReturnType E2E_P01Forward(const E2E_P01ConfigType* Config,
-//                               E2E_PCheckStatusType Checkstatus,
-//                               E2E_P01ProtectStateType* State,
-//                               uint8_t* DataPtr) {
-
-// }
 
 /**
  * PRS_E2E_00196

@@ -16,6 +16,8 @@
  *
  * [1] https://www.autosar.org/fileadmin/user_upload/standards/classic/20-11/AUTOSAR_SWS_E2ELibrary.pdf
  *
+ * Implementation of E2E_P01_Forward is not included yet.
+ *
  */
 
 #include "E2E.h"
