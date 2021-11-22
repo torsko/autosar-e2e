@@ -148,3 +148,12 @@ TEST(P01MapStatusToSM, CheckReturnNotOkAlwaysReturnError) {
         }
     }
 }
+
+TEST(P01MapStatusToSM, UnknownStatusReturnsP_ERROR) {
+    E2E_PCheckStatusType result = E2E_P01MapStatusToSM(E2E_E_OK, (E2E_P01CheckStatusType)0xff, true);
+    EXPECT_EQ(result, E2E_P_ERROR);
+
+    result = E2E_P01MapStatusToSM(E2E_E_OK, (E2E_P01CheckStatusType)0xff, false);
+    EXPECT_EQ(result, E2E_P_ERROR);
+
+}

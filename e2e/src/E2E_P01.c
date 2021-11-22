@@ -141,6 +141,11 @@ static uint8_t E2E_P01_getDataIdCRC(const E2E_P01ConfigType* Config,
             CRC = Crc_CalculateCRC8(&zero, 1, CRC, false);
             break;
         }
+
+        default:
+            // This case is technically unreachable as the configuration
+            // is verified before it is used here.
+            break;
     }
 
     return CRC;
@@ -174,24 +179,30 @@ static uint8_t E2E_P01_CalculateCRCOverDataIdAndData(const E2E_P01ConfigType* Co
 
 static bool E2E_P01_CRCAndDataIDNibble(const E2E_P01ConfigType* Config,
                                        const uint8_t* Data) {
-    uint8_t ReceivedDataIDNibble = 0;
-    uint8_t DataIDNibble = (Config->DataID >> 8) & 0x0F;
-
     // Read CRC from Data
-    uint8_t ReceivedCRC = *(Data+(Config->CRCOffset/8));
+    const size_t crcByteIndex = Config->CRCOffset / 8U;
+    uint8_t ReceivedCRC = Data[crcByteIndex];
+
+    bool dataIDNibbleOk = true;
 
     if (Config->DataIDMode == E2E_P01_DATAID_NIBBLE) {
+        const uint8_t DataIDNibble = (Config->DataID >> 8) & 0x0F;
+
+        uint8_t ReceivedDataIDNibble = 0;
+        const size_t dataIDNibbleByteIndex = Config->DataIDNibbleOffset / 8U;
         // Read low nibble of high byte of Data ID from Data
         if ((Config->DataIDNibbleOffset % 8) == 0) {
-            ReceivedDataIDNibble = (*(Data+(Config->DataIDNibbleOffset/8))) & 0x0F;
+            ReceivedDataIDNibble = Data[dataIDNibbleByteIndex] & 0x0F;
         } else {
-            ReceivedDataIDNibble = (*(Data+(Config->DataIDNibbleOffset/8)) >> 4) & 0x0F;
+            ReceivedDataIDNibble = (Data[dataIDNibbleByteIndex] >> 4U) & 0x0F;
         }
+
+        dataIDNibbleOk = (ReceivedDataIDNibble == DataIDNibble);
     }
 
     uint8_t CalculatedCRC = E2E_P01_CalculateCRCOverDataIdAndData(Config, Data);
 
-    return (ReceivedCRC == CalculatedCRC) && (ReceivedDataIDNibble == DataIDNibble);
+    return (ReceivedCRC == CalculatedCRC) && dataIDNibbleOk;
 }
 
 static E2E_P01CheckStatusType E2E_P01_process_counter(const E2E_P01ConfigType* Config,
@@ -314,36 +325,41 @@ Std_ReturnType E2E_P01Check(const E2E_P01ConfigType* Config,
 
     Std_ReturnType result = E2E_E_OK;
 
-    // Analyse this, the post-inc would mean that we send in the unmodified
-    // MaxDeltaCounter, right?
-    State->MaxDeltaCounter = uint8_min(State->MaxDeltaCounter++, 14);
+    if ((Config == NULL) || (State == NULL) || (Data == NULL)) {
+        result = E2E_E_INPUTERR_NULL;
+    } else if (configValid(Config) == false) {
+        result = E2E_E_INPUTERR_WRONG;
+    } else {
+        const uint8_t newDeltaCounter = State->MaxDeltaCounter + 1U;
+        State->MaxDeltaCounter = uint8_min(newDeltaCounter, 14);
 
-    if (State->NewDataAvailable) {
-        uint8_t ReceivedCounter = readCounter(Config, Data);
-        if (ReceivedCounter < 15) {
-            bool dataValid = E2E_P01_CRCAndDataIDNibble(Config, Data);
+        if (State->NewDataAvailable) {
+            uint8_t ReceivedCounter = readCounter(Config, Data);
+            if (ReceivedCounter < 15) {
+                bool dataValid = E2E_P01_CRCAndDataIDNibble(Config, Data);
 
-            if (dataValid) {
-                if (State->WaitForFirstData) {
-                    State->WaitForFirstData = false;
-                    State->MaxDeltaCounter = Config->MaxDeltaCounterInit;
-                    State->LastValidCounter = ReceivedCounter;
-                    State->Status = E2E_P01STATUS_INITIAL;
+                if (dataValid) {
+                    if (State->WaitForFirstData) {
+                        State->WaitForFirstData = false;
+                        State->MaxDeltaCounter = Config->MaxDeltaCounterInit;
+                        State->LastValidCounter = ReceivedCounter;
+                        State->Status = E2E_P01STATUS_INITIAL;
+                    } else {
+                        State->Status = E2E_P01_process_counter(Config, State, ReceivedCounter);
+                    }
                 } else {
-                    result = E2E_P01_process_counter(Config, State, ReceivedCounter);
+                    State->Status = E2E_P01STATUS_WRONGCRC;
                 }
             } else {
-                State->Status = E2E_P01STATUS_NONEWDATA;
+                result = E2E_E_INPUTERR_WRONG;
             }
         } else {
-            result = E2E_E_INPUTERR_WRONG;
+            // E2E_P01_process_NoNewOrRepeatedDataCounter
+            if (State->NoNewOrRepeatedDataCounter < 14) {
+                State->NoNewOrRepeatedDataCounter++;
+            }
+            State->Status = E2E_P01STATUS_NONEWDATA;
         }
-    } else {
-        // E2E_P01_process_NoNewOrRepeatedDataCounter
-        if (State->NoNewOrRepeatedDataCounter < 14) {
-            State->NoNewOrRepeatedDataCounter++;
-        }
-        State->Status = E2E_P01STATUS_NONEWDATA;
     }
 
     return result;
@@ -399,7 +415,8 @@ E2E_PCheckStatusType E2E_P01MapStatusToSM (Std_ReturnType CheckReturn,
                     break;
 
                 default:
-                    // Undefined, is there such an error code or should the generic error code be used?
+                    // Undefined, return error
+                    result = E2E_P_ERROR;
                     break;
             }
         } else {
@@ -424,7 +441,8 @@ E2E_PCheckStatusType E2E_P01MapStatusToSM (Std_ReturnType CheckReturn,
                     break;
 
                 default:
-                    // Undefined, is there such an error code or should the generic error code be used?
+                    // Undefined, return error
+                    result = E2E_P_ERROR;
                     break;
             }
         }

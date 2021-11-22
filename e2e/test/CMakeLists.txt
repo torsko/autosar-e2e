@@ -7,6 +7,8 @@ gtest_discover_tests(E2E_SM_tests)
 
 # P01
 add_executable(E2E_P01_tests
+    P01/E2E_P01Check_tests.cpp
+    P01/E2E_P01Check_InputValidation_tests.cpp
     P01/E2E_P01CheckInit_tests.cpp
     P01/E2E_P01MapStatusToSM_tests.cpp
     P01/E2E_P01Protect_tests.cpp

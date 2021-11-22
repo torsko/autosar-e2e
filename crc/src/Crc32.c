@@ -6,6 +6,7 @@
  * @date 2021-11-16
  *
  * -----------------------------------------------------------------------
+ *
  * The Crc_CalculateCRC32 function is an adaptation of the crcSlow function
  * from Barr Group's "Free CRC Code in C"
  * https://barrgroup.com/downloads/code-crc-c
@@ -14,6 +15,7 @@
  * the public domain and may be used for any purpose.  However, this
  * notice must not be changed or removed and no warranty is either
  * expressed or implied by its publication or distribution.
+ *
  * -----------------------------------------------------------------------
  *
  */

@@ -9,12 +9,6 @@ protected:
     void SetUp() override {
         SetExampleConfig();
         SetExampleState();
-        // config_.CounterOffset = 0;
-        // config_.CRCOffset = 0;
-        // config_.DataID = 0;
-        // config_.DataIDMode = E2E_P01_DATAID_BOTH;
-        // config_.DataIDNibbleOffset = 0;
-        // config_.DataLength = 64;
     }
 
     void SetExampleConfig() {
@@ -200,6 +194,34 @@ TEST_F(P01Protect, ProtocolExample_DATAID_NIBBLE) {
     Std_ReturnType result = E2E_P01Protect(&config_, &state_, buffer1);
     EXPECT_EQ(result, E2E_E_OK);
     for (size_t i = 0; i<8; ++i) {
+        EXPECT_EQ(buffer1[i], expected_buffer1[i]);
+    }
+
+    ASSERT_EQ(state_.Counter, 1);
+
+    result = E2E_P01Protect(&config_, &state_, buffer2);
+    EXPECT_EQ(result, E2E_E_OK);
+    for (size_t i = 0; i<8; ++i) {
+        EXPECT_EQ(buffer2[i], expected_buffer2[i]);
+    }
+}
+
+// Test having the CRC in the last byte of the payload
+TEST_F(P01Protect, ProtocolExample_DATAID_NIBBLE_crcInLastByte) {
+    const uint8_t expected_buffer1[8]{0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2A};
+    uint8_t buffer1[8]{0, 0, 0, 0, 0, 0, 0, 0};
+    const uint8_t expected_buffer2[8]{0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x77};
+    uint8_t buffer2[8]{0, 0, 0, 0, 0, 0, 0, 0};
+
+    config_.DataIDMode = E2E_P01_DATAID_NIBBLE;
+    config_.DataIDNibbleOffset = 4;
+    config_.CounterOffset = 0;
+    config_.CRCOffset = 56;
+
+    Std_ReturnType result = E2E_P01Protect(&config_, &state_, buffer1);
+    EXPECT_EQ(result, E2E_E_OK);
+    for (size_t i = 0; i<8; ++i) {
+        std::cout << "i=" << i << std::endl;
         EXPECT_EQ(buffer1[i], expected_buffer1[i]);
     }
 
