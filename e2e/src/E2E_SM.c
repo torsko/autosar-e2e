@@ -166,7 +166,7 @@ static void E2E_SMCheck_NODATA(E2E_PCheckStatusType ProfileStatus,
     }
 }
 
-
+// cppcheck-suppress unusedFunction
 Std_ReturnType E2E_SMCheckInit(E2E_SMCheckStateType* StatePtr,
                                const E2E_SMConfigType* ConfigPtr) {
     Std_ReturnType result = E2E_E_OK;
@@ -186,6 +186,7 @@ Std_ReturnType E2E_SMCheckInit(E2E_SMCheckStateType* StatePtr,
     return result;
 }
 
+// cppcheck-suppress unusedFunction
 Std_ReturnType E2E_SMCheck(E2E_PCheckStatusType ProfileStatus,
                            const E2E_SMConfigType* ConfigPtr,
                            E2E_SMCheckStateType* StatePtr) {

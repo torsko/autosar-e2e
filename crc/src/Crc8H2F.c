@@ -19,6 +19,7 @@
  */
 #include "Crc.h"
 
+// cppcheck-suppress unusedFunction
 uint8_t Crc_CalculateCRC8H2F(const uint8_t* Crc_DataPtr,
                              uint32_t Crc_Length,
                              uint8_t Crc_StartValue8H2F,

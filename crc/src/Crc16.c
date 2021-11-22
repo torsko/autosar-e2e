@@ -20,6 +20,7 @@
 
 #include "Crc.h"
 
+// cppcheck-suppress unusedFunction
 uint16_t Crc_CalculateCRC16(const uint8_t* Crc_DataPtr,
                           uint32_t Crc_Length,
                           uint16_t Crc_StartValue16,

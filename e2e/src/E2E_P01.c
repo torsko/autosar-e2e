@@ -262,6 +262,7 @@ static E2E_P01CheckStatusType E2E_P01_process_counter(const E2E_P01ConfigType* C
     return result;
 }
 
+// cppcheck-suppress unusedFunction
 Std_ReturnType E2E_P01Protect(const E2E_P01ConfigType* Config,
                               E2E_P01ProtectStateType* State,
                               uint8_t* Data) {
@@ -288,6 +289,7 @@ Std_ReturnType E2E_P01Protect(const E2E_P01ConfigType* Config,
     return result;
 }
 
+// cppcheck-suppress unusedFunction
 Std_ReturnType E2E_P01ProtectInit(E2E_P01ProtectStateType* State) {
     Std_ReturnType result = E_OK;
     if (NULL == State) {
@@ -299,21 +301,7 @@ Std_ReturnType E2E_P01ProtectInit(E2E_P01ProtectStateType* State) {
     return result;
 }
 
-/**
- * PRS_E2E_00196
- *
- * The function E2E_P01Check shall
- * 1. Check the CRC
- * 2. Check the Data ID nibble, i.e. compare the expected value with the received
- *    value (for E2E_P01_DATAID_NIBBLE configuration only)
- * 3. Check the Counter,
- * 4. determine the check Status,
- *
- * @param Config
- * @param State
- * @param Data
- * @return Std_ReturnType
- */
+// cppcheck-suppress unusedFunction
 Std_ReturnType E2E_P01Check(const E2E_P01ConfigType* Config,
                            E2E_P01CheckStateType* State,
                            const uint8_t* Data) {
@@ -360,6 +348,7 @@ Std_ReturnType E2E_P01Check(const E2E_P01ConfigType* Config,
     return result;
 }
 
+// cppcheck-suppress unusedFunction
 Std_ReturnType E2E_P01CheckInit(E2E_P01CheckStateType* State) {
     Std_ReturnType result = E_OK;
     if (State == NULL) {
@@ -379,6 +368,7 @@ Std_ReturnType E2E_P01CheckInit(E2E_P01CheckStateType* State) {
     return result;
 }
 
+// cppcheck-suppress unusedFunction
 E2E_PCheckStatusType E2E_P01MapStatusToSM (Std_ReturnType CheckReturn,
                                              E2E_P01CheckStatusType Status,
                                              bool profileBehavior) {
@@ -442,8 +432,6 @@ E2E_PCheckStatusType E2E_P01MapStatusToSM (Std_ReturnType CheckReturn,
             }
         }
     }
-
-
 
     return result;
 }

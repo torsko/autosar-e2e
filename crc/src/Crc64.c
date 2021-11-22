@@ -48,6 +48,7 @@ static uint64_t reflect(uint64_t data, uint8_t nBits) {
 	return (reflection);
 }
 
+// cppcheck-suppress unusedFunction
 uint64_t Crc_CalculateCRC64(const uint8_t* Crc_DataPtr,
                           uint32_t Crc_Length,
                           uint64_t Crc_StartValue64,

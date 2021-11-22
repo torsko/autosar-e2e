@@ -45,6 +45,7 @@ static uint32_t reflect(uint32_t data, uint8_t nBits) {
 	return (reflection);
 }
 
+// cppcheck-suppress unusedFunction
 uint32_t Crc_CalculateCRC32(const uint8_t* Crc_DataPtr,
                           uint32_t Crc_Length,
                           uint32_t Crc_StartValue32,
