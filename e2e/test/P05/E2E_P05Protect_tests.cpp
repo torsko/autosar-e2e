@@ -239,3 +239,47 @@ TEST_F(P05Protect, NoCounterModificationOnNULLInput) {
     ASSERT_EQ(result, E2E_E_INPUTERR_NULL);
     EXPECT_EQ(state_.Counter, 0xAA);
 }
+
+
+/**
+ * Test 1/2 for [1] 6.6.5 E2E Profile 5 Protocol Examples
+ *
+ * Example data taken from Table 6.47: E2E Profile 5 example short
+ *
+ * @test E2E_P05Protect creates expected results from [1] Table 6.47
+ */
+TEST_F(P05Protect, ProtocolExample1) {
+    uint8_t expected_buffer[8] = { 0x1c, 0xca, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    uint8_t buffer[8];
+    memset(buffer, 0, 8);
+
+    Std_ReturnType result = E2E_P05Protect(&config_, &state_, buffer, 8);
+
+    for (int i = 0; i<8; ++i) {
+        EXPECT_EQ(buffer[i], expected_buffer[i]);
+    }
+}
+
+/**
+ * Test 2/2 for [1] 6.6.5 E2E Profile 5 Protocol Examples
+ *
+ * Example data taken from Table 6.48: E2E Profile 5 example short
+ *
+ * @test E2E_P05Protect creates expected results from [1] Table 6.48
+ */
+TEST_F(P05Protect, ProtocolExample2) {
+    uint8_t expected_buffer[16] = {
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x28, 0x91, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    uint8_t buffer[16];
+    memset(buffer, 0, 16);
+    config_.Offset = 64;
+    config_.DataLength = 128;
+
+    Std_ReturnType result = E2E_P05Protect(&config_, &state_, buffer, 16);
+
+    for (int i = 0; i<16; ++i) {
+        EXPECT_EQ(buffer[i], expected_buffer[i]);
+    }
+}

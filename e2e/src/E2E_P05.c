@@ -91,3 +91,40 @@ Std_ReturnType E2E_P05Protect(const E2E_P05ConfigType* Config,
 
     return result;
 }
+
+E2E_PCheckStatusType E2E_P05MapStatusToSM(Std_ReturnType CheckReturn,
+                                          E2E_P05CheckStatusType Status) {
+
+    E2E_PCheckStatusType result = E2E_P_OK;
+
+    if (CheckReturn != E2E_E_OK) {
+        result = E2E_P_ERROR;
+    } else {
+        switch (Status) {
+            case E2E_P05STATUS_OK:
+                // Intentional fall-through
+            case E2E_P05STATUS_OKSOMELOST:
+                result = E2E_P_OK;
+                break;
+            case E2E_P05STATUS_ERROR:
+                result = E2E_P_ERROR;
+                break;
+            case E2E_P05STATUS_REPEATED:
+                result = E2E_P_REPEATED;
+                break;
+            case E2E_P05STATUS_NONEWDATA:
+                result = E2E_P_NONEWDATA;
+                break;
+            case E2E_P05STATUS_WRONGSEQUENCE:
+                result = E2E_P_WRONGSEQUENCE;
+                break;
+
+            default:
+                // Undefined, return error
+                result = E2E_P_ERROR;
+                break;
+        }
+    }
+
+    return result;
+}

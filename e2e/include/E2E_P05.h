@@ -123,7 +123,7 @@ typedef enum {
      * successful, with the exception of counter jump,
      * which changed more than the allowed delta
      */
-    E2E_P01STATUS_WRONGSEQUENCE = 0x40
+    E2E_P05STATUS_WRONGSEQUENCE = 0x40
 } E2E_P05CheckStatusType;
 
 
