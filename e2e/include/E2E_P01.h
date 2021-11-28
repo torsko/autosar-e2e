@@ -346,6 +346,8 @@ Std_ReturnType E2E_P01ProtectInit(E2E_P01ProtectStateType* State);
  *
  * Specified in [1] 8.3.1.3 E2E_P01Forward, SWS_E2E_00588 {draft}
  *
+ * @note Not yet implemented!
+ *
  * @param ConfigPtr     Pointer to static configuration.
  * @param Checkstatus   E2E Status of the received message
  * @param StatePtr      Pointer to port/data communication state.
@@ -368,13 +370,14 @@ Std_ReturnType E2E_P01Forward(const E2E_P01ConfigType* ConfigPtr,
  *
  * Specified in [1] 8.3.1.4 E2E_P01Check, SWS_E2E_00158
  *
- * @note The State parameter is marked as inout in the specification
- *       indicating that the function may modify it.
- *
  * @param Config    Pointer to static configuration.
  * @param State     Pointer to port/data communication state.
  * @param Data      Pointer to received data
  * @return Std_ReturnType
+ * @retval E2E_E_INPUTERR_NULL
+ * @retval E2E_E_INPUTERR_WRONG
+ * @retval E2E_E_INTERR
+ * @retval E2E_E_OK
  */
 Std_ReturnType E2E_P01Check(const E2E_P01ConfigType* Config,
                             E2E_P01CheckStateType* State,
@@ -383,6 +386,8 @@ Std_ReturnType E2E_P01Check(const E2E_P01ConfigType* Config,
 
 /**
  * Initializes the check state
+ *
+ * Specified in [1] 8.3.1.5 E2E_P01CheckInit, SWS_E2E_00390
  *
  * @param StatePtr  Pointer to port/data communication state.
  * @return Std_ReturnType
@@ -396,6 +401,8 @@ Std_ReturnType E2E_P01CheckInit(E2E_P01CheckStateType* State);
  * The function maps the check status of Profile 1 to a generic check status, which can
  * be used by E2E state machine check function. The E2E Profile 1 delivers a more
  * fine-granular status, but this is not relevant for the E2E state machine.
+ *
+ * Specified in [1] 8.3.1.6 E2E_P01MapStatusToSM, SWS_E2E_00382
  *
  * Status mapping when profileBehavior is **TRUE**
  * | Status                         | Return value          |

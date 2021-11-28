@@ -30,9 +30,13 @@ endif()
 # Enable generating doxygen documentation with the 'docs' target
 find_program(DOXYGEN_BIN doxygen)
 if (DOXYGEN_BIN)
-  message(STATUS "Doxygen found, adding custom target 'docs'")
+  message(STATUS "Doxygen found, adding custom target 'docs' and 'docs_test'")
   add_custom_target(docs
       COMMAND doxygen Doxyfile
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+
+    add_custom_target(docs_test
+      COMMAND doxygen Doxyfile.test
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 endif()
 

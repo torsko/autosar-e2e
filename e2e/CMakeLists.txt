@@ -4,6 +4,7 @@ set(SRCS
     src/E2E.c
     src/E2E_SM.c
     src/E2E_P01.c
+    src/E2E_P05.c
 )
 
 
