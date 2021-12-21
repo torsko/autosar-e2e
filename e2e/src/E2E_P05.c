@@ -2,6 +2,40 @@
 
 #include "Crc.h"
 
+static uint16_t ComputeCrc(const E2E_P05ConfigType* Config,
+                           const uint8_t* Data,
+                           uint16_t Length) {
+
+    const uint16_t Offset = Config->Offset / 8U;
+    const uint16_t firstDataAfterCRCByteIndex = Offset + 2U;
+
+    uint16_t ComputedCRC = 0;
+
+    if (Config->Offset > 0) {
+        // Calculate CRC for parts before CRC position
+        ComputedCRC = Crc_CalculateCRC16(Data, Offset, 0xFFFF, true);
+
+        // Calculate CRC for parts after CRC position
+        const uint16_t dataLengthAfterCrc = Length - Offset - 2U;
+        ComputedCRC = Crc_CalculateCRC16(&Data[firstDataAfterCRCByteIndex], dataLengthAfterCrc, ComputedCRC, false);
+
+    } else {
+        // Calculate CRC over data
+
+        ComputedCRC = Crc_CalculateCRC16(&Data[firstDataAfterCRCByteIndex], (Length - 2U), 0xFFFF, true);
+    }
+
+    // Calculate CRC for DataID
+    const uint8_t dataIDLSB = Config->DataID & 0xFF;
+    const uint8_t dataIDMSB = (Config->DataID >> 8U) & 0xFF;
+
+    ComputedCRC = Crc_CalculateCRC16(&dataIDLSB, 1, ComputedCRC, false);
+    ComputedCRC = Crc_CalculateCRC16(&dataIDMSB, 1, ComputedCRC, false);
+
+    return ComputedCRC;
+}
+
+
 static Std_ReturnType protectParametersValid(const E2E_P05ConfigType* Config,
                                              const E2E_P05ProtectStateType* State,
                                              const uint8_t* Data,
@@ -44,33 +78,12 @@ Std_ReturnType E2E_P05Protect(const E2E_P05ConfigType* Config,
     if (result == E2E_E_OK) {
         const uint16_t Offset = Config->Offset / 8U;
         const uint16_t CounterOffset = Offset + 2U;
-        const uint16_t firstDataAfterCRCByteIndex = Offset + 2U;
 
         // Write Counter
         Data[CounterOffset] = State->Counter;
 
         // Compute CRC
-        uint16_t ComputedCRC = 0;
-        if (Config->Offset > 0) {
-            // Calculate CRC for parts before CRC position
-            ComputedCRC = Crc_CalculateCRC16(Data, Offset, 0xFFFF, true);
-
-            // Calculate CRC for parts after CRC position
-            const uint16_t dataLengthAfterCrc = Length - Offset - 2U;
-            ComputedCRC = Crc_CalculateCRC16(&Data[firstDataAfterCRCByteIndex], dataLengthAfterCrc, ComputedCRC, false);
-
-        } else {
-            // Calculate CRC over data
-
-            ComputedCRC = Crc_CalculateCRC16(&Data[firstDataAfterCRCByteIndex], (Length - 2U), 0xFFFF, true);
-        }
-
-        // Calculate CRC for DataID
-        const uint8_t dataIDLSB = Config->DataID & 0xFF;
-        const uint8_t dataIDMSB = (Config->DataID >> 8U) & 0xFF;
-
-        ComputedCRC = Crc_CalculateCRC16(&dataIDLSB, 1, ComputedCRC, false);
-        ComputedCRC = Crc_CalculateCRC16(&dataIDMSB, 1, ComputedCRC, false);
+        const uint16_t ComputedCRC = ComputeCrc(Config, Data, Length);
 
         // Write CRC
         const uint8_t computedCRCLSB = ComputedCRC & 0xFF;
@@ -87,6 +100,99 @@ Std_ReturnType E2E_P05Protect(const E2E_P05ConfigType* Config,
         } else {
             State->Counter += 1;
         }
+    }
+
+    return result;
+}
+
+Std_ReturnType E2E_P05Check(const E2E_P05ConfigType* Config,
+                            E2E_P05CheckStateType* State,
+                            const uint8_t* Data,
+                            uint16_t Length) {
+    Std_ReturnType result = E2E_E_OK;
+
+    bool NewDataAvailable = false;
+
+    // Verify inputs of the check function
+    if ((Config == NULL) || (State == NULL)) {
+        result = E2E_E_INPUTERR_NULL;
+    } else if (((Data == NULL) && (Length != 0)) ||
+               ((Data != NULL) && (Length == 0))) {
+        result = E2E_E_INPUTERR_WRONG;
+    } else {
+        if (Data != NULL) {
+            if (Length != (Config->DataLength / 8U)) {
+                result = E2E_E_INPUTERR_WRONG;
+            } else {
+                NewDataAvailable = true;
+            }
+        }
+    }
+
+    if (result == E2E_E_OK) {
+        if (NewDataAvailable) {
+            // Compute Offset
+            const uint16_t Offset = Config->Offset / 8U;
+
+            // Read Counter
+            const uint16_t CounterOffset = Offset + 2U;
+            const uint8_t ReceivedCounter = Data[CounterOffset];
+
+            // Read CRC
+            const uint16_t crcLSBByteIndex = Offset;
+            const uint16_t crcMSBByteIndex = Offset + 1;
+            const uint8_t receivedCRCLSB = Data[crcLSBByteIndex];
+            const uint8_t receivedCRCMSB = Data[crcMSBByteIndex];
+            const uint16_t ReceivedCRC = (receivedCRCMSB << 8) | receivedCRCLSB;
+
+            // Compute CRC
+            const uint16_t ComputedCRC = ComputeCrc(Config, Data, Length);
+
+            // Do checks
+            if (ReceivedCRC == ComputedCRC) {
+                uint8_t DeltaCounter = 0;
+                if (ReceivedCounter < State->Counter) {
+                    DeltaCounter = 0x100 - (State->Counter - ReceivedCounter);
+                } else {
+                    DeltaCounter = ReceivedCounter - State->Counter;
+                }
+
+                if (DeltaCounter <= Config->MaxDeltaCounter) {
+                    if (DeltaCounter > 0) {
+                        if (DeltaCounter == 1) {
+                            State->Status = E2E_P05STATUS_OK;
+                        } else {
+                            State->Status = E2E_P05STATUS_OKSOMELOST;
+                        }
+                    } else {
+                        State->Status = E2E_P05STATUS_REPEATED;
+                    }
+                } else {
+                    State->Status = E2E_P05STATUS_WRONGSEQUENCE;
+                }
+
+                State->Counter = ReceivedCounter;
+
+            } else {
+                State->Status = E2E_P05STATUS_ERROR;
+            }
+        } else {
+            State->Status = E2E_P05STATUS_NONEWDATA;
+        }
+    }
+
+    return result;
+}
+
+
+Std_ReturnType E2E_P05CheckInit(E2E_P05CheckStateType* State) {
+    Std_ReturnType result = E2E_E_OK;
+
+    if (State == NULL) {
+        result = E2E_E_INPUTERR_NULL;
+    } else {
+        State->Counter = 0xFF;
+        State->Status = E2E_P05STATUS_ERROR;
     }
 
     return result;

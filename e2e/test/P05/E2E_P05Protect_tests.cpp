@@ -283,3 +283,27 @@ TEST_F(P05Protect, ProtocolExample2) {
         EXPECT_EQ(buffer[i], expected_buffer[i]);
     }
 }
+
+/**
+ * Test for [1] PRS_E2E_00397
+ *
+ * @test Counter shall be initialized with 0 and incremented by 1 for every
+ * subsequent protect request. When it reaches the maximum value it shall
+ * be restarted at 0.
+ */
+TEST_F(P05Protect, CounterRestart) {
+    E2E_P05ProtectStateType state;
+    E2E_P05ProtectInit(&state);
+
+    ASSERT_EQ(state.Counter, 0);
+    Std_ReturnType result;
+    for (int i=1; i<=255; ++i) {
+        result = E2E_P05Protect(&config_, &state, buffer_, kBufferLength);
+        ASSERT_EQ(result, E2E_E_OK);
+        ASSERT_EQ(state.Counter, i);
+    }
+
+    result = E2E_P05Protect(&config_, &state, buffer_, kBufferLength);
+    EXPECT_EQ(result, E2E_E_OK);
+    EXPECT_EQ(state.Counter, 0);
+}

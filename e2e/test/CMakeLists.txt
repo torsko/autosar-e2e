@@ -20,9 +20,9 @@ gtest_discover_tests(E2E_P01_tests)
 
 # P05
 add_executable(E2E_P05_tests
-    # P05/E2E_P05Check_tests.cpp
-    # P05/E2E_P05Check_InputValidation_tests.cpp
-    # P05/E2E_P05CheckInit_tests.cpp
+    P05/E2E_P05Check_tests.cpp
+    P05/E2E_P05Check_InputValidation_tests.cpp
+    P05/E2E_P05CheckInit_tests.cpp
     P05/E2E_P05MapStatusToSM_tests.cpp
     P05/E2E_P05Protect_tests.cpp
     P05/E2E_P05Protect_InputValidation_tests.cpp
