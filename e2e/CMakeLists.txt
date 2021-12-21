@@ -10,7 +10,7 @@ set(SRCS
 
 add_library(${TARGET_NAME} ${SRCS})
 target_include_directories(${TARGET_NAME} PUBLIC include)
-target_link_libraries(${TARGET_NAME} common crc)
+target_link_libraries(${TARGET_NAME} common crc_fast)
 target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra -pedantic -Werror --coverage)
 target_link_options(${TARGET_NAME} PUBLIC --coverage)
 

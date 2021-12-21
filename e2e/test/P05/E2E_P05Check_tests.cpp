@@ -63,9 +63,8 @@ TEST_F(P05Check, MismatchedCRCSetsStateERROR) {
 }
 
 /**
- * Test for [1] PRS_E2E_00397
  *
- * @test Test for multiple messages in sequence, checking that the counter
+ * @test Test for multiple messages in sequence
  */
 TEST_F(P05Check, ConcurrentMessagesWithSingleCounterIncrementSetsStateOK) {
     ProtectCurrentBuffer();
